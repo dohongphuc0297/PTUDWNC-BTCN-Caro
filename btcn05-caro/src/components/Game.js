@@ -1,25 +1,10 @@
 import React from 'react';
 import Board from './Board';
 import { Size, Line } from '../GameConfig';
+import { connect } from 'react-redux';
+import { ClickSquare, Reset, Toogle, JumpTo } from '../actions/index';
 
 class Game extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            history: [
-                {
-                    id: null,
-                    squares: Array((Size * Size)).fill(null),
-                    index: null
-                }
-            ],
-            stepNumber: 0,
-            xIsNext: true,
-            dir: "desc",
-            winner: null
-        };
-    }
-
     calculateWinner(index, squares, player) {
         var countBlock = 0;
         var result = [index];
@@ -201,79 +186,68 @@ class Game extends React.Component {
 
     handleClick(i) {
         //console.log(i);
-        const history = this.state.history.slice(0, this.state.stepNumber + 1);
+        const history = this.props.history.slice(0, this.props.board.stepNumber + 1);
         const current = history[history.length - 1];
         const squares = current.squares.slice();
         if (squares[i]) {
             return;
         }
 
-        const winner = this.calculateWinner(i, squares, this.state.xIsNext ? "X" : "O");
+        const winner = this.calculateWinner(i, squares, this.props.board.xIsNext ? "X" : "O");
 
-        if (this.state.winner) {
+        if (this.props.board.winner) {
             return;
         }
-        squares[i] = this.state.xIsNext ? "X" : "O";
+        squares[i] = this.props.board.xIsNext ? "X" : "O";
 
-        this.setState({
-            history: history.concat([
-                {
+        this.props.clickSquare({
+            history: {
+                value: {
                     id: history.length,
                     squares: squares,
                     index: i
-                }
-            ]),
-            stepNumber: this.state.stepNumber + 1,
-            xIsNext: !this.state.xIsNext,
-            winner: winner ? winner : null
-        });
-    }
-
-    jumpTo(step, index) {
-        const history = this.state.history.slice();
-        const current = history[step];
-        const xIsNext = (step % 2) === 0;
-        const winner = index ? this.calculateWinner(index, current.squares, current.squares[index]) : null;
-        this.setState({
-            stepNumber: step,
-            xIsNext: xIsNext,
-            winner: winner ? winner : null
-        });
-    }
-
-    Toggle() {
-        this.setState({
-            dir: this.state.dir === "asc" ? "desc" : "asc"
-        });
-    }
-
-    reset() {
-        this.setState({
-            history: [
-                {
-                    id: null,
-                    squares: Array((Size * Size)).fill(null),
-                    index: null
-                }
-            ],
-            stepNumber: 0,
-            xIsNext: true,
-            dir: "desc",
-            winner: null
+                },
+                index: this.props.board.stepNumber + 1
+        },
+            board: {
+                stepNumber: this.props.board.stepNumber + 1,
+                xIsNext: !this.props.board.xIsNext,
+                winner: winner ? winner : null
+            }
         })
     }
 
-    render() {
-        //console.log(this.state);
-        const history = this.state.history.slice();
-        const current = history[this.state.stepNumber];
+    jumpTo(step, index) {
+        const history = this.props.history.slice();
+        const current = history[step];
+        const xIsNext = (step % 2) === 0;
+        const winner = index ? this.calculateWinner(index, current.squares, current.squares[index]) : null;
+        this.props.jumpTo({
+            stepNumber: step,
+            xIsNext: xIsNext,
+            winner: winner ? winner : null
+        })
+    }
 
-        if (this.state.dir === "asc") {
+    Toggle() {
+        this.props.toogle();
+    }
+
+    reset() {
+        this.props.reset();
+    }
+
+    render() {
+        //console.log(this.props.board);
+        const history = this.props.history.slice();
+        const current = history[this.props.board.stepNumber];
+
+        if (this.props.board.dir === "asc") {
             history.reverse();
         }
 
-        const winner = this.state.winner;
-        const flag = this.state.stepNumber;
+        const winner = this.props.board.winner;
+        const flag = this.props.board.stepNumber;
 
         const moves = history.map((step, move) => {
             const desc = step.id ?
@@ -293,7 +267,7 @@ class Game extends React.Component {
         } else if (flag >= (Size * Size)) {
             status = "The match is draw";
         } else {
-            status = "Next player: " + (this.state.xIsNext ? "X" : "O");
+            status = "Next player: " + (this.props.board.xIsNext ? "X" : "O");
         }
 
         return (
@@ -313,7 +287,7 @@ class Game extends React.Component {
                     <div className="game-history">
                         <h3>History</h3>
                         <button type="button" className="btn btn-primary" onClick={() => this.Toggle()}>Toggle <span className="glyphicon glyphicon-sort"></span></button>
-                        <ol reversed={this.state.dir === "asc" ? true : false}>{moves}</ol>
+                        <ol reversed={this.props.board.dir === "asc" ? true : false}>{moves}</ol>
                     </div>
                 </div>
             </div>
@@ -321,4 +295,19 @@ class Game extends React.Component {
     }
 }
 
-export default Game
+const mapStateToProps = state => ({
+    history: state.history,
+    board: state.board
+  })
+  
+const mapDispatchToProps = dispatch => ({
+    clickSquare: value => dispatch(ClickSquare(value)),
+    reset: () => dispatch(Reset()),
+    toogle: () => dispatch(Toogle()),
+    jumpTo: (value) => dispatch(JumpTo(value))
+  })
+
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps
+  )(Game)

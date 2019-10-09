@@ -12,6 +12,8 @@ const INITIAL_STATE =
 
 export default (state = INITIAL_STATE, action) => {
     switch (action.type) {
+        case types.CLICK:
+            return state.slice(0, action.value.history.index).concat(action.value.history.value);
         case types.RESET:
             return INITIAL_STATE;
         default:
