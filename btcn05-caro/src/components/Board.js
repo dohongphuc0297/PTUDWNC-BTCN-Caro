@@ -1,6 +1,7 @@
 import React from 'react';
 import Square from './Square';
 import { Size, Line } from '../GameConfig';
+import { connect } from 'react-redux';
 
 class Board extends React.Component {
     renderSquare(i) {
@@ -60,4 +61,12 @@ class Board extends React.Component {
     }
 }
 
-export default Board
+const mapStateToProps = state => ({
+    squares: state.history[state.board.stepNumber].squares,
+    win: state.board.winner ? state.board.winner.line : null
+  })
+
+export default connect(
+    mapStateToProps,
+    null
+  )(Board)
